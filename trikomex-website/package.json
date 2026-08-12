@@ -1,0 +1,20 @@
+{
+  "name": "trikomex-website",
+  "version": "1.0.0",
+  "private": true,
+  "description": "TRIKOMEX corporate website with SQLite quote storage",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "build": "node -e \"console.log('TRIKOMEX static site ready')\""
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "multer": "^2.0.2",
+    "sql.js": "^1.12.0"
+  }
+}

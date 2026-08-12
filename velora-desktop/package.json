@@ -1,0 +1,58 @@
+{
+  "name": "velora-desktop",
+  "version": "1.0.0",
+  "private": true,
+  "description": "VEXOR ERP Windows shell — hosted Railway web URL",
+  "main": "main.cjs",
+  "author": "VEXOR",
+  "license": "UNLICENSED",
+  "scripts": {
+    "start": "electron .",
+    "predist:win": "node scripts/write-config.cjs",
+    "dist:win": "electron-builder --win nsis",
+    "prepack": "node scripts/write-config.cjs",
+    "pack": "electron-builder --win nsis --dir"
+  },
+  "build": {
+    "appId": "com.velora.erp",
+    "productName": "VEXOR",
+    "copyright": "Copyright © VEXOR",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.cjs",
+      "preload.cjs",
+      "app-config.cjs",
+      "package.json"
+    ],
+    "extraMetadata": {
+      "main": "main.cjs"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png",
+      "artifactName": "VEXOR-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "VEXOR"
+    },
+    "publish": null
+  },
+  "devDependencies": {
+    "electron": "^37.2.0",
+    "electron-builder": "^26.0.12"
+  }
+}

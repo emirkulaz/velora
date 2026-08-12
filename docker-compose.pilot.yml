@@ -1,0 +1,86 @@
+# Temiz pilot demo — TRIKOMEX gerçek verisi YOK
+# Kullanım (repo kökünden):
+#   1) cp .env.pilot.example .env.pilot  → değerleri doldur
+#   2) docker compose -f docker-compose.pilot.yml --env-file .env.pilot up -d --build
+#   3) docker compose -f docker-compose.pilot.yml --env-file .env.pilot run --rm api-seed
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-velora}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD required}
+      POSTGRES_DB: ${POSTGRES_DB:-velora_pilot}
+    volumes:
+      - velora_pilot_pg:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'pg_isready -U ${POSTGRES_USER:-velora} -d ${POSTGRES_DB:-velora_pilot}',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  api:
+    build:
+      context: .
+      dockerfile: deploy/api.Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DATABASE_URL: postgresql://${POSTGRES_USER:-velora}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-velora_pilot}?schema=public
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET required}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-8h}
+      CORS_ORIGIN: ${CORS_ORIGIN:-}
+      ENABLE_DEMO_MODE: 'false'
+      ENABLE_PILOT_SEED: 'false'
+      DZD_PER_USD: ${DZD_PER_USD:-240}
+      EXCHANGE_RATE_API_URL: ${EXCHANGE_RATE_API_URL:-}
+      EXCHANGE_RATE_API_KEY: ${EXCHANGE_RATE_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4.1-mini}
+
+  web:
+    build:
+      context: .
+      dockerfile: deploy/web.Dockerfile
+      args:
+        VITE_API_URL: /api
+        NGINX_CONF: deploy/nginx.conf
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      PORT: '80'
+    ports:
+      - '${PILOT_HTTP_PORT:-8080}:80'
+
+  api-seed:
+    profiles: ['seed']
+    build:
+      context: .
+      dockerfile: deploy/api.Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-velora}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-velora_pilot}?schema=public
+      ENABLE_PILOT_SEED: 'true'
+      PILOT_ADMIN_PASSWORD: ${PILOT_ADMIN_PASSWORD:?PILOT_ADMIN_PASSWORD required}
+    entrypoint:
+      [
+        'sh',
+        '-c',
+        './node_modules/.bin/prisma migrate deploy && ./node_modules/.bin/ts-node --transpile-only scripts/seed-pilot.ts',
+      ]
+
+volumes:
+  velora_pilot_pg:

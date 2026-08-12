@@ -1,0 +1,8 @@
+node_modules/
+release/
+dist/
+*.log
+app-url.local
+app-config.cjs
+.env
+.env.*

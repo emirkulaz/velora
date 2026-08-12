@@ -1,0 +1,227 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  ORGANIZATION_ADMIN
+  OPERATOR
+  VIEWER
+}
+
+enum EventDirection {
+  ENTRY
+  EXIT
+}
+
+enum EventStatus {
+  CONFIRMED
+  NEEDS_REVIEW
+  REJECTED
+}
+
+enum CameraStatus {
+  ONLINE
+  OFFLINE
+  UNKNOWN
+}
+
+enum NotificationChannel {
+  IN_APP
+}
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  timezone  String   @default("UTC")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users            User[]
+  parkingSites     ParkingSite[]
+  vehicleEvents    VehicleEvent[]
+  notifications    Notification[]
+  notificationRules NotificationRule[]
+  auditLogs        AuditLog[]
+}
+
+model User {
+  id             String   @id @default(cuid())
+  organizationId String?
+  email          String   @unique
+  name           String
+  passwordHash   String
+  role           UserRole
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId])
+}
+
+model ParkingSite {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  code           String
+  timezone       String   @default("Africa/Algiers")
+  address        String?
+  countryCode    String   @default("DZ")
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization  Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  cameras       Camera[]
+  vehicleEvents VehicleEvent[]
+
+  @@unique([organizationId, code])
+  @@index([organizationId])
+}
+
+model Camera {
+  id                   String       @id @default(cuid())
+  organizationId       String
+  parkingSiteId        String
+  name                 String
+  code                 String
+  direction            EventDirection
+  /// Encrypted or server-only secret; never returned to frontend.
+  rtspUrlEncrypted     String?
+  status               CameraStatus @default(UNKNOWN)
+  lastHeartbeatAt      DateTime?
+  frameIntervalMs      Int          @default(500)
+  confidenceThreshold  Float        @default(0.75)
+  dedupeWindowSeconds  Int          @default(30)
+  isActive             Boolean      @default(true)
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+
+  parkingSite   ParkingSite    @relation(fields: [parkingSiteId], references: [id], onDelete: Cascade)
+  vehicleEvents VehicleEvent[]
+
+  @@unique([parkingSiteId, code])
+  @@index([organizationId])
+  @@index([parkingSiteId])
+}
+
+model VehicleEvent {
+  id                  String         @id @default(cuid())
+  organizationId      String
+  parkingSiteId       String
+  cameraId            String
+  plateText           String
+  normalizedPlateText String
+  direction           EventDirection
+  detectedAt          DateTime
+  confidence          Float
+  countryCode         String
+  status              EventStatus    @default(NEEDS_REVIEW)
+  vehicleImageUrl     String?
+  plateCropUrl        String?
+  processingDurationMs Int?
+  manuallyCorrected   Boolean        @default(false)
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  organization  Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  parkingSite   ParkingSite        @relation(fields: [parkingSiteId], references: [id], onDelete: Restrict)
+  camera        Camera             @relation(fields: [cameraId], references: [id], onDelete: Restrict)
+  recognitions  PlateRecognition[]
+  snapshots     VehicleSnapshot[]
+
+  @@index([organizationId, detectedAt])
+  @@index([organizationId, status])
+  @@index([organizationId, normalizedPlateText])
+  @@index([parkingSiteId, detectedAt])
+  @@index([cameraId, detectedAt])
+}
+
+model PlateRecognition {
+  id              String   @id @default(cuid())
+  organizationId  String
+  vehicleEventId  String
+  rawText         String
+  normalizedText  String
+  confidence      Float
+  provider        String
+  countryCode     String
+  isPrimary       Boolean  @default(true)
+  createdAt       DateTime @default(now())
+
+  vehicleEvent VehicleEvent @relation(fields: [vehicleEventId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([vehicleEventId])
+}
+
+model VehicleSnapshot {
+  id             String   @id @default(cuid())
+  organizationId String
+  vehicleEventId String
+  kind           String
+  storageKey     String
+  contentType    String
+  createdAt      DateTime @default(now())
+
+  vehicleEvent VehicleEvent @relation(fields: [vehicleEventId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([vehicleEventId])
+}
+
+model Notification {
+  id             String              @id @default(cuid())
+  organizationId String
+  channel        NotificationChannel @default(IN_APP)
+  title          String
+  body           String
+  isRead         Boolean             @default(false)
+  payloadJson    String?
+  createdAt      DateTime            @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, createdAt])
+  @@index([organizationId, isRead])
+}
+
+model NotificationRule {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  isActive       Boolean  @default(true)
+  /// JSON rule definition evaluated by the API.
+  ruleJson       String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+model AuditLog {
+  id             String   @id @default(cuid())
+  organizationId String?
+  actorUserId    String?
+  action         String
+  entityType     String
+  entityId       String?
+  metadataJson   String?
+  createdAt      DateTime @default(now())
+
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, createdAt])
+  @@index([entityType, entityId])
+}

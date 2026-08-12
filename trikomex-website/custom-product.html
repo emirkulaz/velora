@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TRIKOMEX CAD · Atelier textile</title>
+  <meta name="description" content="Logiciel de design textile professionnel TRIKOMEX — précision au millimètre.">
+  <link rel="icon" type="image/jpeg" href="logo.jpg.jpg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="cad-body">
+
+  <header class="cad-chrome">
+    <div class="cad-chrome-left">
+      <a class="cad-brand" href="index.html" title="Accueil">
+        <img src="logo.jpg.jpg" alt="" width="28" height="28">
+        <strong>TRIKOMEX</strong>
+        <span>CAD</span>
+      </a>
+      <nav class="cad-menubar" aria-label="Fichier">
+        <button type="button" onclick="exportCadPng()">Exporter PNG</button>
+        <button type="button" onclick="clearCanvas()">Nouveau dessin</button>
+        <button type="button" onclick="undoCad()">Annuler</button>
+        <a href="index.html#configureur">Retour site</a>
+      </nav>
+    </div>
+    <div class="cad-chrome-right">
+      <span class="cad-pill" id="cadDocTitle">Sans titre.tkx</span>
+      <button type="button" class="cad-send" onclick="sendCustomProductWhatsApp()">Envoyer WhatsApp</button>
+    </div>
+  </header>
+
+  <div class="cad-app">
+
+    <aside class="cad-sidebar">
+      <section class="cad-panel">
+        <h2>Propriétés produit</h2>
+
+        <label>
+          Référence
+          <input id="productName" type="text" placeholder="TKX-COL-001" oninput="onCadPropsChange()" autocomplete="off">
+        </label>
+
+        <label>
+          Type
+          <select id="productCategory" onchange="onCustomCategoryChange(); onCadPropsChange();">
+            <option value="Bande de col">Bande de col / yaka</option>
+            <option value="Bande textile">Bande textile (au mètre)</option>
+            <option value="Bande pour pantalon">Bande pour pantalon</option>
+          </select>
+        </label>
+
+        <div class="cad-two">
+          <label>
+            Eni (cm)
+            <input id="productWidth" type="number" min="0.5" max="6" step="0.1" value="3"
+              oninput="clampProductWidth(); onCadPropsChange()">
+          </label>
+          <label>
+            Jauge
+            <select id="productGauge" onchange="onCadPropsChange()">
+              <option value="DDD-9">DDD-9</option>
+              <option value="DDD-11">DDD-11</option>
+            </select>
+          </label>
+        </div>
+
+        <div id="customCollarFields">
+          <label>
+            Longueur yaka
+            <select id="productLength" onchange="onCadPropsChange()">
+              <option value="39 cm">39.0 cm</option>
+              <option value="42 cm" selected>42.0 cm</option>
+            </select>
+          </label>
+        </div>
+
+        <div id="customMeterFields" hidden>
+          <label>
+            Mètres
+            <input id="productMeters" type="number" min="1" step="1" value="10" oninput="onCadPropsChange()">
+          </label>
+          <p class="cad-hint">Zone dessin = segment 20.0 cm (vente au mètre)</p>
+        </div>
+
+        <div class="cad-two">
+          <label>
+            Matière / kumaş
+            <select id="productMaterial" onchange="onCadPropsChange()">
+              <option value="Coton">Coton / Pamuk</option>
+              <option value="Polyester" selected>Polyester</option>
+              <option value="Coton / Polyester">Coton / Polyester</option>
+            </select>
+          </label>
+          <label>
+            Qté
+            <input id="productQuantity" type="number" min="1" value="100" oninput="onCadPropsChange()">
+          </label>
+        </div>
+
+        <label>
+          Couleurs
+          <input id="productColors" type="text" placeholder="Pantone / RAL / nom" oninput="onCadPropsChange()">
+        </label>
+
+        <label>
+          Notes
+          <textarea id="productDescription" rows="3" placeholder="Contraintes techniques…"
+            oninput="onCadPropsChange()"></textarea>
+        </label>
+
+        <label class="cad-file">
+          Importer motif
+          <input id="productLogo" type="file" accept="image/*" onchange="previewImage(event)">
+        </label>
+      </section>
+
+      <section class="cad-panel cad-panel-muted">
+        <h2>Fiche technique</h2>
+        <dl class="cad-spec" id="cadSpecList">
+          <div><dt>Réf.</dt><dd id="previewName">—</dd></div>
+          <div><dt>Type</dt><dd id="previewCategory">—</dd></div>
+          <div><dt>Couleur</dt><dd id="previewColors">—</dd></div>
+          <div><dt>Jauge</dt><dd id="previewGauge">—</dd></div>
+          <div><dt>Cotes</dt><dd id="previewSize">—</dd></div>
+          <div><dt>Matière</dt><dd id="previewMaterial">—</dd></div>
+          <div><dt>Qté</dt><dd id="previewQuantity">—</dd></div>
+        </dl>
+      </section>
+    </aside>
+
+    <section class="cad-workspace">
+      <div class="cad-ribbon" role="toolbar" aria-label="Outils CAD">
+        <div class="cad-ribbon-block">
+          <span class="cad-ribbon-label">Dessin</span>
+          <div class="cad-tool-row">
+            <button type="button" class="cad-icon-btn is-active" data-tool="brush" onclick="setBrush()" title="Crayon (B)">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17.25V21h3.75L17.8 9.94l-3.75-3.75L3 17.25zm17.7-10.46a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+              <em>Crayon</em>
+            </button>
+            <button type="button" class="cad-icon-btn" data-tool="line" onclick="setLineTool()" title="Ligne (L)">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 20.5 20.5 3.5" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+              <em>Ligne</em>
+            </button>
+            <button type="button" class="cad-icon-btn" data-tool="rectangle" onclick="setRectangleTool()" title="Rectangle (R)">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="6" width="16" height="12" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+              <em>Rect</em>
+            </button>
+            <button type="button" class="cad-icon-btn" data-tool="circle" onclick="setCircleTool()" title="Cercle (C)">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+              <em>Cercle</em>
+            </button>
+            <button type="button" class="cad-icon-btn" data-tool="measure" onclick="setMeasureTool()" title="Cote (M)">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h16M7 9v6M12 9v6M17 9v6" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+              <em>Cote</em>
+            </button>
+            <button type="button" class="cad-icon-btn" data-tool="eraser" onclick="setEraser()" title="Gomme (E)">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.2 3.8 4.8 15.2a2 2 0 0 0 0 2.8l1.2 1.2h5l8.4-8.4-3.2-3.2zM13 20h7" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+              <em>Gomme</em>
+            </button>
+          </div>
+        </div>
+
+        <div class="cad-ribbon-block">
+          <span class="cad-ribbon-label">Précision</span>
+          <div class="cad-tool-row cad-tool-row-controls">
+            <label class="cad-ctrl">
+              Snap
+              <select id="snapSize">
+                <option value="0.1">1 mm</option>
+                <option value="0.5" selected>5 mm</option>
+                <option value="1">1 cm</option>
+              </select>
+            </label>
+            <label class="cad-ctrl cad-check">
+              <input type="checkbox" id="orthoMode" checked>
+              Ortho
+            </label>
+            <label class="cad-ctrl cad-check">
+              <input type="checkbox" id="gridVisible" checked>
+              Grille
+            </label>
+            <label class="cad-ctrl">
+              Trait
+              <select id="brushSize">
+                <option value="1">0.3 mm</option>
+                <option value="2" selected>0.5 mm</option>
+                <option value="4">1.0 mm</option>
+                <option value="8">2.0 mm</option>
+                <option value="14">3.5 mm</option>
+              </select>
+            </label>
+            <label class="cad-ctrl">
+              Couleur
+              <input id="drawColor" type="color" value="#111827">
+            </label>
+          </div>
+        </div>
+
+        <div class="cad-ribbon-block">
+          <span class="cad-ribbon-label">Vue</span>
+          <div class="cad-tool-row">
+            <button type="button" class="cad-icon-btn" onclick="cadZoom(1.15)" title="Zoom +">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5v12M5 11h12" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+              <em>Zoom+</em>
+            </button>
+            <button type="button" class="cad-icon-btn" onclick="cadZoom(1/1.15)" title="Zoom -">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 11h12" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+              <em>Zoom-</em>
+            </button>
+            <button type="button" class="cad-icon-btn" onclick="fitCadView()" title="Ajuster (F)">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+              <em>Fit</em>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="cad-viewport-wrap">
+        <div class="cad-viewport" id="cadViewport">
+          <canvas id="productCanvas" width="1400" height="780"></canvas>
+          <canvas id="designCanvas" width="1400" height="780"></canvas>
+          <canvas id="overlayCanvas" width="1400" height="780"></canvas>
+        </div>
+      </div>
+
+      <footer class="cad-statusbar">
+        <span id="cadCoords">X 0.00 cm &nbsp;|&nbsp; Y 0.00 cm</span>
+        <span id="cadDelta">ΔX 0.00 &nbsp; ΔY 0.00 &nbsp; L 0.00</span>
+        <span id="cadSnapLabel">SNAP 5 mm</span>
+        <span id="cadScaleLabel">ÉCHELLE —</span>
+        <span id="cadBandLabel">BANDE 42.0 × 3.0 cm</span>
+        <span id="cadMeasureLabel"></span>
+        <span class="cad-keys">B L R C M E · Ortho · Ctrl+Z</span>
+      </footer>
+    </section>
+  </div>
+
+  <script src="script.js"></script>
+  <script src="cad.js"></script>
+
+</body>
+
+</html>

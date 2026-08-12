@@ -1,0 +1,36 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: velora-park-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-velorapark}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-velorapark}
+      POSTGRES_DB: ${POSTGRES_DB:-velora_park}
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - velora_park_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-velorapark} -d ${POSTGRES_DB:-velora_park}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    container_name: velora-park-minio
+    profiles: ["storage"]
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-velorapark}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-velorapark_secret}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - velora_park_minio_data:/data
+
+volumes:
+  velora_park_pg_data:
+  velora_park_minio_data:

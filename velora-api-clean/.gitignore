@@ -1,0 +1,13 @@
+node_modules
+dist
+coverage
+.env
+.env.*
+!.env.example
+*.log
+tsconfig.tsbuildinfo
+generated
+src/generated
+.vscode
+.idea
+.DS_Store

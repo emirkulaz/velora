@@ -1,0 +1,1 @@
+"""Velora Park recognition service."""

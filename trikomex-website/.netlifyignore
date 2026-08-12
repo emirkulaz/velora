@@ -1,0 +1,9 @@
+node_modules
+db/trikomex.db
+db/trikomex.db-*
+uploads
+.git
+*.mp4
+notlar.txt
+admin.js
+custom-product.js

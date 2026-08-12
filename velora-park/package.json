@@ -1,0 +1,30 @@
+{
+  "name": "velora-park",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Velora Park — multi-tenant parking plate recognition platform",
+  "workspaces": [
+    "apps/api",
+    "apps/web",
+    "packages/shared"
+  ],
+  "scripts": {
+    "dev:api": "npm run start:dev --workspace @velora-park/api",
+    "dev:web": "npm run dev --workspace @velora-park/web",
+    "build": "npm run build --workspace @velora-park/shared && npm run build --workspace @velora-park/api && npm run build --workspace @velora-park/web",
+    "build:api": "npm run build --workspace @velora-park/api",
+    "build:web": "npm run build --workspace @velora-park/web",
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "test:api": "npm run test --workspace @velora-park/api",
+    "db:up": "docker compose up -d postgres",
+    "db:down": "docker compose down",
+    "db:migrate": "npm run prisma:migrate --workspace @velora-park/api",
+    "db:generate": "npm run prisma:generate --workspace @velora-park/api",
+    "db:seed": "npm run prisma:seed --workspace @velora-park/api",
+    "recognition:dev": "cd apps/recognition && python -m uvicorn app.main:app --reload --port 8001"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

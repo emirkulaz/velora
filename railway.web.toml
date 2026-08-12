@@ -1,0 +1,16 @@
+# Railway → Web service: Settings → Config-as-code → railway.web.toml
+# Root Directory: / (repo root)
+# Build Args (Variables → Build):
+#   NGINX_CONF=deploy/nginx.spa.conf
+#   VITE_API_URL=https://YOUR-API.up.railway.app
+# Watch Paths: velora-web/**, deploy/web.Dockerfile, deploy/nginx.spa.conf
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "deploy/web.Dockerfile"
+
+[deploy]
+healthcheckPath = "/"
+healthcheckTimeout = 60
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5

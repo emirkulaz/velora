@@ -1,0 +1,27 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Company {
+  id        Int      @id @default(autoincrement())
+  name      String
+  legalName String?
+  taxNumber String?  @unique
+  email     String?
+  phone     String?
+  country   String   @default("Algeria")
+  city      String?
+  address   String?
+  website   String?
+  logo      String?
+  currency  String   @default("DZD")
+  timezone  String   @default("Africa/Algiers")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

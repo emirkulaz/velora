@@ -1,0 +1,7 @@
+.env
+.env.*
+!.env.example
+!.env.pilot.example
+node_modules/
+velora-desktop/release/
+velora-desktop/app-config.cjs
