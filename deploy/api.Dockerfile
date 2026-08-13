@@ -23,6 +23,7 @@ COPY --from=build /app/dist ./dist
 COPY --from=build /app/generated ./generated
 COPY --from=build /app/prisma ./prisma
 COPY --from=build /app/scripts/seed-pilot.ts ./scripts/seed-pilot.ts
+COPY --from=build /app/scripts/bootstrap-production.ts ./scripts/bootstrap-production.ts
 COPY deploy/api-entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 EXPOSE 3001
